@@ -1,0 +1,7 @@
+__title__ = "python-veracrypt"
+__description__ = "A cross-platform Python wrapper for the VeraCrypt CLI."
+__url__ = "https://github.com/srichs/python-veracrypt"
+__version__ = "0.1.0"
+__author__ = "srichs"
+__author_email__ = "srichs@pm.me"
+__license__ = "GNU GPL v3.0"
