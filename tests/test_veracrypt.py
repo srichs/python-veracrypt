@@ -12,12 +12,16 @@ class TestVeraCrypt(unittest.TestCase):
 
     @patch("os.path.exists", return_value=True)
     def test_check_path_valid(self, mock_exists):
-        self.assertTrue(self.veracrypt._check_path(os.path.join('C:\\', 'Program Files', 'VeraCrypt', 'VeraCrypt.exe')))
+        self.assertTrue(
+            self.veracrypt._check_path(
+                os.path.join("C:\\", "Program Files", "VeraCrypt", "VeraCrypt.exe")
+            )
+        )
 
     @patch("os.path.exists", return_value=False)
     def test_check_path_invalid(self, mock_exists):
         with self.assertRaises(VeraCryptError):
-            self.veracrypt._check_path(os.path.join('C:\\', 'Program Files', 'vc'))
+            self.veracrypt._check_path(os.path.join("C:\\", "Program Files", "vc"))
 
     @patch("subprocess.run")
     @patch("os.path.exists", return_value=True)
@@ -57,7 +61,9 @@ class TestVeraCrypt(unittest.TestCase):
     @patch("os.path.exists", return_value=True)
     def test_mount_volume_windows_masks_password(self, mock_exists, mock_run):
         self.veracrypt.os_name = "Windows"
-        self.veracrypt.veracrypt_path = os.path.join("C:\\", "Program Files", "VeraCrypt")
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
         password = "SecretPassword"
         cmd = [
             os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe"),
@@ -69,7 +75,9 @@ class TestVeraCrypt(unittest.TestCase):
             "/silent",
             "/force",
         ]
-        mock_run.return_value = subprocess.CompletedProcess(args=cmd, returncode=0, stdout="OK", stderr="")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="OK", stderr=""
+        )
 
         result = self.veracrypt.mount_volume("C:/vol", password)
 
@@ -81,7 +89,9 @@ class TestVeraCrypt(unittest.TestCase):
         self.veracrypt.os_name = "Linux"
         self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
         password = "secret"
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="OK", stderr="")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="OK", stderr=""
+        )
 
         with patch.object(self.veracrypt, "_check_path", return_value=True):
             self.veracrypt.mount_volume("/vol", password, mount_point="/mnt")
@@ -105,10 +115,14 @@ class TestVeraCrypt(unittest.TestCase):
     @patch("subprocess.run")
     def test_custom_command_windows_masks_password(self, mock_run):
         self.veracrypt.os_name = "Windows"
-        self.veracrypt.veracrypt_path = os.path.join("C:\\", "Program Files", "VeraCrypt")
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
         options = ["/volume", "C:/vol", "/password", "Secret"]
         cmd = [os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe")] + options
-        mock_run.return_value = subprocess.CompletedProcess(args=cmd, returncode=0, stdout="OK", stderr="")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="OK", stderr=""
+        )
 
         result = self.veracrypt.command(options)
 
@@ -118,7 +132,9 @@ class TestVeraCrypt(unittest.TestCase):
         self.veracrypt.os_name = "Linux"
         self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
 
-        with patch.object(self.veracrypt, "_check_path", return_value=True) as mock_check:
+        with patch.object(
+            self.veracrypt, "_check_path", return_value=True
+        ) as mock_check:
             cmd = self.veracrypt._dismount_nix("/mnt/vol")
 
         mock_check.assert_called_once_with("/mnt/vol")
@@ -126,7 +142,9 @@ class TestVeraCrypt(unittest.TestCase):
 
     def test_create_win_includes_keyfiles_and_options(self):
         self.veracrypt.os_name = "Windows"
-        self.veracrypt.veracrypt_path = os.path.join("C:\\", "Program Files", "VeraCrypt")
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
         cmd = self.veracrypt._create_win(
             "C:/vol",
             "Secret",
