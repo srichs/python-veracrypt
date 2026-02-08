@@ -5,7 +5,7 @@ description = "A cross-platform Python wrapper for the VeraCrypt CLI."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "GNU GPL v3.0" }
-authors = [{ name="srich", email="srichs@pm.me" }]
+authors = [{ name="srichs", email="srichs@pm.me" }]
 dependencies = []
 
 [project.optional-dependencies]

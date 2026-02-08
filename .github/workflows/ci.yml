@@ -29,7 +29,7 @@ jobs:
         run: black --check .
 
       - name: Mypy
-        run: mypy veracrypt
+        run: mypy src
 
       - name: Pytest
         run: pytest --cov=veracrypt --cov-report=term-missing
