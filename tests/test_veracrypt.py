@@ -188,3 +188,47 @@ class TestVeraCrypt(unittest.TestCase):
         self.assertIn("AES(Twofish)", cmd)
         self.assertIn("sha-256", cmd)
         self.assertIn("ext4", cmd)
+
+    def test_default_path_linux_uses_check_path(self):
+        self.veracrypt.os_name = "Linux"
+        with patch.object(self.veracrypt, "_check_path", return_value=True) as mock:
+            path = self.veracrypt._default_path()
+
+        self.assertEqual(path, os.path.join("/", "usr", "bin", "veracrypt"))
+        mock.assert_called_once_with(path)
+
+    @patch("os.path.exists", return_value=False)
+    def test_default_path_windows_missing_binary_raises(self, mock_exists):
+        self.veracrypt.os_name = "Windows"
+
+        with self.assertRaises(VeraCryptError):
+            self.veracrypt._default_path()
+
+    def test_get_password_windows(self):
+        self.veracrypt.os_name = "Windows"
+        password, index = self.veracrypt._get_password([
+            "/volume",
+            "C:/vol",
+            "/password",
+            "Secret",
+        ])
+
+        self.assertEqual(password, "Secret")
+        self.assertEqual(index, 3)
+
+    def test_get_password_missing_returns_none(self):
+        self.veracrypt.os_name = "Linux"
+        password, index = self.veracrypt._get_password(["--text", "--mount", "/vol"])
+
+        self.assertIsNone(password)
+        self.assertEqual(index, -1)
+
+    def test_custom_nix_without_password_skips_stdin(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        options = ["--text", "--mount", "/vol"]
+
+        cmd = self.veracrypt._custom_nix(options)
+
+        self.assertNotIn("--stdin", cmd)
+        self.assertIn("--text", cmd)
