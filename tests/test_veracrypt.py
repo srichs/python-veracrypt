@@ -288,6 +288,13 @@ class TestVeraCrypt(unittest.TestCase):
         self.assertIn("--stdin", cmd)
         self.assertIn("--force", cmd)
 
+    def test_options_validation_rejects_non_list(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+
+        with self.assertRaises(ValueError):
+            self.veracrypt.mount_volume("/vol", "secret", options="--pim 123")
+
     def test_custom_nix_keeps_existing_stdin(self):
         self.veracrypt.os_name = "Linux"
         self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
@@ -428,6 +435,71 @@ class TestVeraCrypt(unittest.TestCase):
             self.veracrypt.create_volume("/vol", "secret", 1024)
 
         self.assertIn("Bad", str(ctx.exception))
+
+    @patch("subprocess.run")
+    def test_create_volume_windows_passes_options(self, mock_run):
+        self.veracrypt.os_name = "Windows"
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
+        cmd = [
+            os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt Format.exe"),
+            "/create",
+            "C:/vol",
+            "/password",
+            "Secret",
+            "/size",
+            "1024",
+            "/encryption",
+            "AES",
+            "/hash",
+            "sha-512",
+            "/filesystem",
+            "FAT",
+        ]
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="OK", stderr=""
+        )
+
+        with patch.object(self.veracrypt, "_create_win", return_value=cmd) as mock:
+            self.veracrypt.create_volume(
+                "C:/vol", "Secret", 1024, options=["/random", "/extra"]
+            )
+
+        mock.assert_called_once_with(
+            "C:/vol",
+            "Secret",
+            1024,
+            Encryption.AES,
+            Hash.SHA512,
+            FileSystem.FAT,
+            None,
+            ["/random", "/extra"],
+        )
+
+    @patch("subprocess.run")
+    def test_create_volume_linux_passes_options(self, mock_run):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["cmd"], returncode=0, stdout="OK", stderr=""
+        )
+
+        with patch.object(self.veracrypt, "_create_nix", return_value=["cmd"]) as mock:
+            self.veracrypt.create_volume(
+                "/vol", "secret", 1024, options=["--random-source", "/dev/random"]
+            )
+
+        mock.assert_called_once_with(
+            "/vol",
+            1024,
+            Encryption.AES,
+            Hash.SHA512,
+            FileSystem.FAT,
+            None,
+            False,
+            ["--random-source", "/dev/random"],
+        )
 
     @patch("subprocess.run")
     def test_command_windows_without_password_does_not_mask(self, mock_run):
