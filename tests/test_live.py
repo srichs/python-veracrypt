@@ -1,17 +1,20 @@
-from veracrypt import FileSystem, VeraCrypt
+"""Live integration test script for the VeraCrypt wrapper.
+
+This module is used for live testing on a real system. It creates a test volume on
+the user's desktop, make sure that you put in the correct username so that the path
+to the desktop is valid. It includes sleep time of five seconds between each action
+so that it can be observed. You should watch the desktop for the creation of the
+"test.vc" volume, and you should watch the VeraCrypt program to ensure the volume is
+mounted and dismounted as the action is performed.
+"""
+
 from time import sleep
 import logging
 import os
 import secrets
 
+from veracrypt import FileSystem, VeraCrypt
 
-"""
-This module is used for live testing on a real system. It creates a test volume on the user's desktop, make
-sure that you put in the correct username so that the path to the desktop is valid. It includes sleep time
-of five seconds between each action so that it can be observed. You should watch the desktop for the creation
-of the 'test.vc' volume, and you should watch the VeraCrypt program to ensure the volume is mounted and 
-dismounted as the action is performed.
-"""
 if __name__ == "__main__":
     try:
         vc = VeraCrypt(
