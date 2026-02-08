@@ -98,6 +98,21 @@ class VeraCrypt(object):
         self.veracrypt_path = veracrypt_path or self._default_path()
         self.logger.info("Object initialized")
 
+    def _validate_options(self, options: Optional[List[str]], context: str) -> None:
+        """Validate CLI options passed into public methods."""
+        if options is None:
+            return
+        if not isinstance(options, list) or not all(isinstance(item, str) for item in options):
+            raise ValueError(
+                f"{context} options must be a list of strings when provided."
+            )
+
+    @staticmethod
+    def _mask_password_in_args(args: List[str], password: str, index: int) -> None:
+        """Safely mask a password in a command args list."""
+        if 0 <= index < len(args):
+            args[index] = "*" * len(password)
+
     def _default_path(self) -> str:
         """Return the default VeraCrypt CLI path for the current platform."""
         self.logger.debug("Getting default path")
@@ -154,6 +169,7 @@ class VeraCrypt(object):
         :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug("Mounting volume")
+        self._validate_options(options, "mount_volume")
         self._check_path(volume_path)
 
         if self.os_name == "Windows":
@@ -165,8 +181,7 @@ class VeraCrypt(object):
         try:
             if self.os_name == "Windows":
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                pword = "*" * len(password)
-                result.args[4] = pword
+                self._mask_password_in_args(result.args, password, 4)
             else:
                 result = subprocess.run(
                     cmd,
@@ -179,7 +194,7 @@ class VeraCrypt(object):
             self.logger.debug(f"{result.stdout}")
             return result
         except subprocess.CalledProcessError as e:
-            raise VeraCryptError(f"Error mounting volume: {e.stderr}")
+            raise VeraCryptError(f"Error mounting volume: {e.stderr}") from e
 
     def _mount_win(
         self,
@@ -244,6 +259,7 @@ class VeraCrypt(object):
         :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug("Dismounting volume")
+        self._validate_options(options, "dismount_volume")
 
         if self.os_name == "Windows":
             cmd = self._dismount_win(target, options)
@@ -257,7 +273,7 @@ class VeraCrypt(object):
             self.logger.debug(f"{result.stdout}")
             return result
         except subprocess.CalledProcessError as e:
-            raise VeraCryptError(f"Error dismounting volume: {e.stderr}")
+            raise VeraCryptError(f"Error dismounting volume: {e.stderr}") from e
 
     def _dismount_win(
         self, target: str = "all", options: Optional[List[str]] = None
@@ -318,10 +334,18 @@ class VeraCrypt(object):
         :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug("Creating volume")
+        self._validate_options(options, "create_volume")
 
         if self.os_name == "Windows":
             cmd = self._create_win(
-                volume_path, password, size, encryption, hash_alg, filesystem, keyfiles
+                volume_path,
+                password,
+                size,
+                encryption,
+                hash_alg,
+                filesystem,
+                keyfiles,
+                options,
             )
         else:
             if self.os_name == "Darwin":
@@ -329,7 +353,14 @@ class VeraCrypt(object):
                     with open(volume_path, "w"):
                         pass
             cmd = self._create_nix(
-                volume_path, size, encryption, hash_alg, filesystem, keyfiles, hidden
+                volume_path,
+                size,
+                encryption,
+                hash_alg,
+                filesystem,
+                keyfiles,
+                hidden,
+                options,
             )
             self.logger.debug(f"Command created: {cmd}")
 
@@ -337,8 +368,7 @@ class VeraCrypt(object):
             result = None
             if self.os_name == "Windows":
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                pword = "*" * len(password)
-                result.args[4] = pword
+                self._mask_password_in_args(result.args, password, 4)
             else:
                 result = subprocess.run(
                     cmd,
@@ -351,7 +381,7 @@ class VeraCrypt(object):
             self.logger.debug(f"{result.stdout}")
             return result
         except subprocess.CalledProcessError as e:
-            raise VeraCryptError(f"Error creating volume: {e.stderr}")
+            raise VeraCryptError(f"Error creating volume: {e.stderr}") from e
 
     def _create_win(
         self,
@@ -448,6 +478,7 @@ class VeraCrypt(object):
         :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug("Calling custom command")
+        self._validate_options(options, "command")
         if self.os_name == "Windows":
             cmd = self._custom_win(options, windows_program)
             password, index = self._get_password(cmd)
@@ -462,8 +493,7 @@ class VeraCrypt(object):
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
                 if password is not None:
                     self.logger.debug("Sanitizing password")
-                    pword = "*" * len(password)
-                    result.args[index] = pword
+                    self._mask_password_in_args(result.args, password, index)
             else:
                 if password is not None:
                     result = subprocess.run(
@@ -481,7 +511,7 @@ class VeraCrypt(object):
             self.logger.debug(f"{result.stdout}")
             return result
         except subprocess.CalledProcessError as e:
-            raise VeraCryptError(f"Error calling custom command: {e.stderr}")
+            raise VeraCryptError(f"Error calling custom command: {e.stderr}") from e
 
     def _custom_win(
         self,
