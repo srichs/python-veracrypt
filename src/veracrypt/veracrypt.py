@@ -1,11 +1,11 @@
 """Python wrapper around the VeraCrypt CLI."""
 
-from enum import Enum
-from typing import List, Optional, Tuple
 import logging
 import os
 import platform
 import subprocess
+from enum import Enum
+from typing import List, Optional, Tuple
 
 
 class Encryption(Enum):
@@ -59,7 +59,8 @@ class VeraCrypt(object):
 
     The class wraps the VeraCrypt CLI to create, mount, and dismount volumes on Windows,
     macOS, and Linux systems. Windows uses ``/param value`` arguments and separates the
-    mount/dismount tool (``VeraCrypt.exe``) from the format tool (``VeraCrypt Format.exe``),
+    mount/dismount tool (``VeraCrypt.exe``) from the format tool
+    (``VeraCrypt Format.exe``),
     while Linux/macOS use ``--param value`` arguments against a single executable.
 
     Extra CLI options can be supplied to the public methods, but invalid options will
@@ -102,7 +103,9 @@ class VeraCrypt(object):
         """Validate CLI options passed into public methods."""
         if options is None:
             return
-        if not isinstance(options, list) or not all(isinstance(item, str) for item in options):
+        if not isinstance(options, list) or not all(
+            isinstance(item, str) for item in options
+        ):
             raise ValueError(
                 f"{context} options must be a list of strings when provided."
             )
