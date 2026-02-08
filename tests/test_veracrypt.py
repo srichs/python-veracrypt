@@ -291,6 +291,94 @@ class TestVeraCrypt(unittest.TestCase):
         self.assertNotIn("secret", args[0])
         self.assertEqual(kwargs.get("input"), "secret\n")
 
+    def test_custom_win_appends_options(self):
+        self.veracrypt.os_name = "Windows"
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
+        options = ["/volume", "C:/vol", "/quit"]
+
+        cmd = self.veracrypt._custom_win(options, windows_program="VeraCrypt.exe")
+
+        self.assertEqual(cmd[0], os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe"))
+        self.assertEqual(cmd[1:], options)
+
+    def test_custom_nix_without_options_returns_base_command(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+
+        cmd = self.veracrypt._custom_nix()
+
+        self.assertEqual(cmd, ["sudo", "/usr/bin/veracrypt"])
+
+    def test_dismount_nix_all_skips_check_path(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+
+        with patch.object(self.veracrypt, "_check_path") as mock_check:
+            cmd = self.veracrypt._dismount_nix()
+
+        mock_check.assert_not_called()
+        self.assertIn("--unmount", cmd)
+
+    @patch("subprocess.run")
+    def test_create_volume_windows_masks_password(self, mock_run):
+        self.veracrypt.os_name = "Windows"
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
+        password = "SecretPassword"
+        cmd = [
+            os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt Format.exe"),
+            "/create",
+            "C:/vol",
+            "/password",
+            password,
+            "/size",
+            "1024",
+            "/encryption",
+            "AES",
+            "/hash",
+            "sha-512",
+            "/filesystem",
+            "FAT",
+            "/protectMemory",
+            "/quick",
+            "/silent",
+            "/force",
+        ]
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="OK", stderr=""
+        )
+
+        result = self.veracrypt.create_volume("C:/vol", password, 1024)
+
+        self.assertEqual(result.args[4], "*" * len(password))
+
+    @patch("subprocess.run")
+    def test_command_linux_without_password_avoids_stdin(self, mock_run):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        options = ["--text", "--mount", "/vol"]
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="OK", stderr=""
+        )
+
+        self.veracrypt.command(options)
+
+        _, kwargs = mock_run.call_args
+        self.assertIsNone(kwargs.get("input"))
+
+    @patch("subprocess.run")
+    def test_dismount_volume_windows_error_raises(self, mock_run):
+        self.veracrypt.os_name = "Windows"
+        mock_run.side_effect = subprocess.CalledProcessError(1, "cmd", stderr="Oops")
+
+        with self.assertRaises(VeraCryptError) as ctx:
+            self.veracrypt.dismount_volume("Z")
+
+        self.assertIn("Oops", str(ctx.exception))
+
     def test_default_path_unsupported_os_raises(self):
         self.veracrypt.os_name = "Solaris"
 
