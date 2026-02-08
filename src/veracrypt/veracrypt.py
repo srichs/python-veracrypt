@@ -299,7 +299,8 @@ class VeraCrypt(object):
         else:
             if self.os_name == 'Darwin':
                 if not os.path.exists(volume_path):
-                    with open(volume_path, 'w'): pass
+                    with open(volume_path, 'w'):
+                        pass
             cmd = self._create_nix(volume_path, size, encryption, hash_alg, filesystem, keyfiles, hidden)
             self.logger.debug(f'Command created: {cmd}')
 
