@@ -124,6 +124,21 @@ class VeraCrypt(object):
             self._check_path(keyfile)
 
     @staticmethod
+    def _validate_size(size: int) -> None:
+        """Validate volume size is a positive integer."""
+        if not isinstance(size, int) or size <= 0:
+            raise ValueError("Volume size must be a positive integer.")
+
+    @staticmethod
+    def _validate_volume_parent_dir(volume_path: str) -> None:
+        """Ensure the parent directory for a volume path exists."""
+        parent_dir = os.path.dirname(volume_path) or "."
+        if not os.path.exists(parent_dir):
+            raise VeraCryptError(
+                f"The parent directory for {volume_path} does not exist."
+            )
+
+    @staticmethod
     def _mask_password_in_args(args: List[str], password: str, index: int) -> None:
         """Safely mask a password in a command args list."""
         if 0 <= index < len(args):
@@ -187,6 +202,8 @@ class VeraCrypt(object):
         self.logger.debug("Mounting volume")
         self._validate_options(options, "mount_volume")
         self._check_path(volume_path)
+        if self.os_name != "Windows" and mount_point:
+            self._check_path(mount_point)
 
         if self.os_name == "Windows":
             cmd = self._mount_win(volume_path, password, mount_point, options)
@@ -352,6 +369,8 @@ class VeraCrypt(object):
         self.logger.debug("Creating volume")
         self._validate_options(options, "create_volume")
         self._validate_keyfiles(keyfiles, "create_volume")
+        self._validate_size(size)
+        self._validate_volume_parent_dir(volume_path)
 
         if self.os_name == "Windows":
             cmd = self._create_win(
