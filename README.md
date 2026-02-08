@@ -35,11 +35,11 @@ On Windows based systems the password cannot be passed to the CLI using stdin, s
 
 ## Documentation
 
-Sphinx documentation lives in the `docs/` directory. To build HTML docs locally:
+Sphinx documentation lives in the `docs/sphinx/` directory. To build HTML docs locally:
 
 ```bash
 pip install -r requirements.txt
-sphinx-build -b html docs docs/_build/html
+sphinx-build -b html docs/sphinx docs/sphinx/_build/html
 ```
 
 ## References
