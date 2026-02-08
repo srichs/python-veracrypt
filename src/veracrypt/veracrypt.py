@@ -110,9 +110,7 @@ class VeraCrypt(object):
                 f"{context} options must be a list of strings when provided."
             )
 
-    def _validate_keyfiles(
-        self, keyfiles: Optional[List[str]], context: str
-    ) -> None:
+    def _validate_keyfiles(self, keyfiles: Optional[List[str]], context: str) -> None:
         """Validate keyfile paths passed into public methods."""
         if keyfiles is None:
             return
