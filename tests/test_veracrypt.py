@@ -299,17 +299,16 @@ class TestVeraCrypt(unittest.TestCase):
 
     @patch("subprocess.run")
     @patch("os.path.exists", return_value=False)
-    def test_create_volume_darwin_creates_placeholder(
-        self, mock_exists, mock_run
-    ):
+    def test_create_volume_darwin_creates_placeholder(self, mock_exists, mock_run):
         self.veracrypt.os_name = "Darwin"
         self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="OK", stderr=""
         )
 
-        with patch("builtins.open", unittest.mock.mock_open()) as mock_open, patch.object(
-            self.veracrypt, "_create_nix", return_value=["cmd"]
+        with (
+            patch("builtins.open", unittest.mock.mock_open()) as mock_open,
+            patch.object(self.veracrypt, "_create_nix", return_value=["cmd"]),
         ):
             self.veracrypt.create_volume("/vol", "pass", 1024)
 
