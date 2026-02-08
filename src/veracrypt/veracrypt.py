@@ -370,7 +370,8 @@ class VeraCrypt(object):
         self._validate_options(options, "create_volume")
         self._validate_keyfiles(keyfiles, "create_volume")
         self._validate_size(size)
-        self._validate_volume_parent_dir(volume_path)
+        if self.os_name == "Linux":
+            self._validate_volume_parent_dir(volume_path)
 
         if self.os_name == "Windows":
             cmd = self._create_win(
