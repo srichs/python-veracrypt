@@ -110,6 +110,21 @@ class VeraCrypt(object):
                 f"{context} options must be a list of strings when provided."
             )
 
+    def _validate_keyfiles(
+        self, keyfiles: Optional[List[str]], context: str
+    ) -> None:
+        """Validate keyfile paths passed into public methods."""
+        if keyfiles is None:
+            return
+        if not isinstance(keyfiles, list) or not all(
+            isinstance(item, str) for item in keyfiles
+        ):
+            raise ValueError(
+                f"{context} keyfiles must be a list of strings when provided."
+            )
+        for keyfile in keyfiles:
+            self._check_path(keyfile)
+
     @staticmethod
     def _mask_password_in_args(args: List[str], password: str, index: int) -> None:
         """Safely mask a password in a command args list."""
@@ -338,6 +353,7 @@ class VeraCrypt(object):
         """
         self.logger.debug("Creating volume")
         self._validate_options(options, "create_volume")
+        self._validate_keyfiles(keyfiles, "create_volume")
 
         if self.os_name == "Windows":
             cmd = self._create_win(
