@@ -99,7 +99,7 @@ On Windows based systems the password cannot be passed to the CLI using stdin, s
 Sphinx documentation lives in the `docs/sphinx/` directory. To build HTML docs locally:
 
 ```bash
-pip install -r requirements.txt
+pip install ".[docs]"
 sphinx-build -b html docs/sphinx docs/sphinx/_build/html
 ```
 
@@ -115,6 +115,7 @@ The generated docs can be opened from `docs/sphinx/_build/html/index.html`.
 - Install development dependencies with `pip install -r requirements-dev.txt`.
 - Run tests with `pytest`.
 - Format with `black` and sort imports with `isort`.
+- Lint with `ruff` and type-check with `mypy`.
 
 ## License
 
