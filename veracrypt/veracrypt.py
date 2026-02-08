@@ -385,8 +385,8 @@ class VeraCrypt(object):
         return cmd
     
     def command(
-        self, 
-        options: Optional[List[str]] = None, 
+        self,
+        options: Optional[List[str]] = None,
         windows_program: Optional[str] = "VeraCrypt.exe"
     ) -> subprocess.CompletedProcess:
         """
@@ -396,8 +396,6 @@ class VeraCrypt(object):
         :return: a subprocess.CompletedProcess response from the command line
         """
         self.logger.debug('Calling custom command')
-        password, index = self._get_password(options)
-
         if self.os_name == 'Windows':
             cmd = self._custom_win(options, windows_program)
             password, index = self._get_password(cmd)
@@ -439,20 +437,22 @@ class VeraCrypt(object):
         password, p_index = self._get_password(options)
         cmd = ['sudo', self.veracrypt_path]
 
-        if password:
+        if password and options:
             self.logger.debug('Removing password from command line options')
-            del options[p_index -1:p_index + 1]
+            del options[p_index - 1:p_index + 1]
         
         if options:
             cmd += options
         
         if password:
             if '--stdin' not in options:
-                cmd += '--stdin'
+                cmd += ['--stdin']
         self.logger.debug('Custom command generated')
         return cmd
     
-    def _get_password(self, cmd: List[str]) -> Tuple[str, int]:
+    def _get_password(self, cmd: Optional[List[str]]) -> Tuple[Optional[str], int]:
+        if not cmd:
+            return None, -1
         pword_option = '--password'
         if self.os_name == 'Windows':
             pword_option = '/password'
