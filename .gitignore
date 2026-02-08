@@ -1,5 +1,7 @@
 src/veracrypt/__pycache__/
+src/python_veracrypt.egg-info
 tests/__pycache__/
 docs/sphinx/_build
+dist
 .pytest_cache
 .venv/
