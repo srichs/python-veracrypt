@@ -1,5 +1,8 @@
 # python-veracrypt
 
+[![CI](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml/badge.svg)](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/python-veracrypt.svg)](https://pypi.org/project/python-veracrypt/)
+
 ## Overview
 
 A cross platform Python wrapper for the [VeraCrypt](https://veracrypt.eu) CLI. It requires the VeraCrypt application to be installed on your system and it uses the CLI to perform different operations.
