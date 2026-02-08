@@ -1,3 +1,5 @@
+"""Python wrapper around the VeraCrypt CLI."""
+
 from enum import Enum
 from typing import List, Optional, Tuple
 import logging
@@ -7,9 +9,7 @@ import subprocess
 
 
 class Encryption(Enum):
-    """
-    An Enum for the VeraCrypt Encryption type.
-    """
+    """Supported VeraCrypt encryption algorithms."""
     AES = "AES"
     SERPENT = "Serpent"
     TWOFISH = "Twofish"
@@ -25,9 +25,7 @@ class Encryption(Enum):
 
 
 class Hash(Enum):
-    """
-    An Enum for the VeraCrypt Hash type.
-    """
+    """Supported VeraCrypt hash algorithms."""
     SHA256 = "sha-256"
     SHA512 = "sha-512"
     WHIRLPOOL = "whirlpool"
@@ -37,9 +35,7 @@ class Hash(Enum):
 
 
 class FileSystem(Enum):
-    """
-    An Enum for the File System formatting.
-    """
+    """Supported filesystem formats for newly created volumes."""
     NONE = "None"
     FAT = "FAT"
     EXFAT = "exFAT"
@@ -52,43 +48,34 @@ class FileSystem(Enum):
 
 
 class VeraCryptError(RuntimeError):
-    pass
+    """Raised when VeraCrypt operations fail."""
 
 
 class VeraCrypt(object):
-    """
-    The VeraCrypt class is a cross platform tool wrapper used to do basic tasks using the 
-    VeraCrypt CLI. This class allows a user to create, mount, and dismount a volume
-    on Windows, MacOS, or Linux as long as VeraCrypt has been installed. 
-    
-    There are major differences between the VeraCrypt CLI on Windows versus on Linux/MacOS. Parameters 
-    are passed on the Windows CLI in the format '/param value', while on Linux/MacOS the parameters
-    are passed in the format '--param value'. On Windows there are two CLI programs, VeraCrypt.exe
-    which performs the mounting and dismounting of volumes, and 'VeraCrypt Format.exe' which
-    performs the creation of volumes. The Windows CLI options are slightly different than the
-    Linux/MacOS options, and care should be taken to ensure that the correct options are used so
-    there are no errors.
+    """Cross-platform wrapper for core VeraCrypt CLI operations.
 
-    Care should be taken when passing additional options to each of the public methods, if the
-    option is not valid for the CLI then an error will occur.
+    The class wraps the VeraCrypt CLI to create, mount, and dismount volumes on Windows,
+    macOS, and Linux systems. Windows uses ``/param value`` arguments and separates the
+    mount/dismount tool (``VeraCrypt.exe``) from the format tool (``VeraCrypt Format.exe``),
+    while Linux/macOS use ``--param value`` arguments against a single executable.
 
-    The command() method allows the user to supply a custom command to the VeraCrypt CLI. The method
-    takes a list of options that will be called with the VeraCrypt command. On Windows you should
-    pass the parameter windows_program='VeraCrypt Format.exe' if you would like to create a volume
-    using a custom command. The default windows_program value is for the 'VeraCrypt.exe' program.
+    Extra CLI options can be supplied to the public methods, but invalid options will
+    result in a VeraCrypt CLI error.
 
-    :param log_level: the logging level to be used for debugging, default: logging.ERROR
-    :param log_fmt: the format to be used for logging messages
-    :param log_datefmt: the date format to use in logging messages if included in format
-    :param veracrypt_path: the path to the veracrypt executable, this is set automatically if None.
-    On Windows there are two different executables, one is used for creation and the other for
-    mounting and dismounting, so the veracrypt_path should be the directory where these executables
-    exist. On Linux and MacOS this should be the full path to the veracrypt program.
+    The :meth:`command` method allows arbitrary command execution. On Windows, set
+    ``windows_program="VeraCrypt Format.exe"`` to target the volume creation CLI.
 
-    **WARNING:** On Windows the VeraCrypt CLI does not allow the passing of the password via stdin 
-    which means that the subprocess call could expose the password in logs or history. The password
-    is sanitized in the args of the subprocess.CompletedProcess returned value so that if it is
-    printed or logged the password will not be exposed. 
+    **WARNING:** On Windows the VeraCrypt CLI does not accept passwords from stdin. The
+    password will be present in the subprocess arguments for the duration of the call.
+    The returned ``CompletedProcess.args`` has the password masked for logging safety.
+
+    :param log_level: Logging level to use. Defaults to ``logging.ERROR``.
+    :param log_fmt: Logging format string.
+    :param log_datefmt: Date format string used in log messages.
+    :param veracrypt_path: Path to the VeraCrypt executable. On Windows, this should be
+        the directory containing the executables. On macOS/Linux, this should be the
+        full path to the VeraCrypt binary. If ``None``, a platform-specific default is
+        discovered.
     """
     def __init__(
         self, 
@@ -104,6 +91,7 @@ class VeraCrypt(object):
         self.logger.info('Object initialized')
 
     def _default_path(self) -> str:
+        """Return the default VeraCrypt CLI path for the current platform."""
         self.logger.debug('Getting default path')
 
         if self.os_name == 'Windows':
@@ -127,6 +115,12 @@ class VeraCrypt(object):
         return path
 
     def _check_path(self, path: str) -> bool:
+        """Validate that a path exists.
+
+        :param path: Filesystem path to validate.
+        :raises VeraCryptError: If the path does not exist.
+        :return: ``True`` when the path exists.
+        """
         if os.path.exists(path):
             self.logger.debug(f'Path {path} exists')
             return True
@@ -140,14 +134,14 @@ class VeraCrypt(object):
         mount_point: Optional[str] = None,
         options: Optional[List[str]] = None
     ) -> subprocess.CompletedProcess:
-        """
-        Mounts a VeraCrypt volume.
-        :param volume_path: the path to the volume to be mounted
-        :param password: the password for the volume
-        :param mount_point: the mount point where to mount the volume
-        :param options: any additional options that should be passed. Be careful when 
-        using these options there will be diffences based on platform.
-        :return: a subprocess.CompletedProcess response from the command line
+        """Mount a VeraCrypt volume.
+
+        :param volume_path: Path to the volume file to mount.
+        :param password: Password for the volume.
+        :param mount_point: Target mount point (drive letter on Windows).
+        :param options: Additional CLI options. Options differ by platform.
+        :raises VeraCryptError: If the CLI call fails.
+        :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug('Mounting volume')
         self._check_path(volume_path)
@@ -178,6 +172,7 @@ class VeraCrypt(object):
         mount_point: Optional[str] = None,
         options: Optional[List[str]] = None
     ) -> List[str]:
+        """Build the Windows CLI command for mounting a volume."""
         self.logger.debug('Mounting volume on Windows')
         cmd = [
             os.path.join(self.veracrypt_path, 'VeraCrypt.exe'),
@@ -200,6 +195,7 @@ class VeraCrypt(object):
         mount_point: Optional[str] = None,
         options: Optional[List[str]] = None
     ) -> List[str]:
+        """Build the Linux/macOS CLI command for mounting a volume."""
         self.logger.debug('Mounting volume on Linux/MacOS')
         cmd = [
             'sudo',
@@ -219,10 +215,12 @@ class VeraCrypt(object):
         return cmd
 
     def dismount_volume(self, target: str = 'all', options: Optional[List[str]] = None) -> subprocess.CompletedProcess:
-        """
-        Dismounts a VeraCrypt volume.
-        :param target: the mount point to dismount, default is all which will dismount all mounted volumes.
-        :return: a subprocess.CompletedProcess response from the command line
+        """Dismount a VeraCrypt volume or all mounted volumes.
+
+        :param target: Mount point to dismount. Use ``"all"`` to dismount all volumes.
+        :param options: Additional CLI options.
+        :raises VeraCryptError: If the CLI call fails.
+        :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug('Dismounting volume')
 
@@ -241,6 +239,7 @@ class VeraCrypt(object):
             raise VeraCryptError(f'Error dismounting volume: {e.stderr}')
 
     def _dismount_win(self, target: str = 'all', options: Optional[List[str]] = None) -> List[str]:
+        """Build the Windows CLI command for dismounting volumes."""
         self.logger.debug('Dismounting volume on Windows')
         cmd = [os.path.join(self.veracrypt_path, 'VeraCrypt.exe'), '/dismount']
 
@@ -254,6 +253,7 @@ class VeraCrypt(object):
         return cmd
     
     def _dismount_nix(self, target: str = 'all', options: Optional[List[str]] = None) -> List[str]:
+        """Build the Linux/macOS CLI command for dismounting volumes."""
         self.logger.debug('Dismounting volume on Linux/MacOS')
         cmd = ['sudo', self.veracrypt_path, '--text', '--non-interactive', '--unmount']
 
@@ -278,17 +278,19 @@ class VeraCrypt(object):
         hidden: bool = False,
         options: Optional[List[str]] = None
     ) -> subprocess.CompletedProcess:
-        """
-        Creates a VeraCrypt volume.
-        :param volume_path: the path to the volume to be mounted
-        :param password: the password for the volume
-        :param size: the size of the volume in bytes
-        :param encryption: the encryption type to use to encrypt the volume
-        :param hash_alg: the hash algorithm to use to encrypt the volume
-        :param filesystem: the formatting to use to format the volume
-        :param keyfiles: the keyfiles that should be used to encrypt the volume
-        :param hidden: a bool for whether the volume should be a hidden volume
-        :return: a subprocess.CompletedProcess response from the command line
+        """Create a new VeraCrypt volume.
+
+        :param volume_path: Destination path for the volume file.
+        :param password: Password for the volume.
+        :param size: Volume size in bytes.
+        :param encryption: Encryption algorithm to use.
+        :param hash_alg: Hash algorithm to use.
+        :param filesystem: Filesystem format to apply.
+        :param keyfiles: Optional keyfiles to include in encryption.
+        :param hidden: Whether to create a hidden volume.
+        :param options: Additional CLI options.
+        :raises VeraCryptError: If the CLI call fails.
+        :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug('Creating volume')
 
@@ -326,6 +328,7 @@ class VeraCrypt(object):
         keyfiles: Optional[List[str]] = None,
         options: Optional[List[str]] = None
     ) -> List[str]:
+        """Build the Windows CLI command for creating a volume."""
         self.logger.debug('Creating volume on Windows')
         cmd = [
             os.path.join(self.veracrypt_path, 'VeraCrypt Format.exe'),
@@ -358,6 +361,7 @@ class VeraCrypt(object):
         hidden: bool = False,
         options: Optional[List[str]] = None
     ) -> List[str]:
+        """Build the Linux/macOS CLI command for creating a volume."""
         self.logger.debug('Creating volume on Linux/MacOS')
         cmd = [
             'sudo',
@@ -389,11 +393,12 @@ class VeraCrypt(object):
         options: Optional[List[str]] = None,
         windows_program: Optional[str] = "VeraCrypt.exe"
     ) -> subprocess.CompletedProcess:
-        """
-        Calls the VeraCrypt CLI with the given options.
-        :param options: the options to be passed to the VeraCrypt CLI
-        :param windows_program: Windows Only option for a which program to call 
-        :return: a subprocess.CompletedProcess response from the command line
+        """Call the VeraCrypt CLI with custom options.
+
+        :param options: Options to pass to the VeraCrypt CLI.
+        :param windows_program: Windows-only program name to invoke.
+        :raises VeraCryptError: If the CLI call fails.
+        :return: ``subprocess.CompletedProcess`` for the CLI invocation.
         """
         self.logger.debug('Calling custom command')
         if self.os_name == 'Windows':
@@ -424,6 +429,7 @@ class VeraCrypt(object):
             raise VeraCryptError(f'Error calling custom command: {e.stderr}')
 
     def _custom_win(self, options: Optional[List[str]] = None, windows_program: Optional[str] = "VeraCrypt.exe") -> List[str]:
+        """Build a Windows CLI command using an arbitrary VeraCrypt executable."""
         self.logger.debug('Calling custom command on Windows')
         cmd = [os.path.join(self.veracrypt_path, windows_program)]
         
@@ -433,6 +439,7 @@ class VeraCrypt(object):
         return cmd
     
     def _custom_nix(self, options: Optional[List[str]] = None) -> List[str]:
+        """Build a Linux/macOS CLI command using provided options."""
         self.logger.debug('Calling custom command on Linux/MacOS')
         password, p_index = self._get_password(options)
         cmd = ['sudo', self.veracrypt_path]
@@ -451,6 +458,11 @@ class VeraCrypt(object):
         return cmd
     
     def _get_password(self, cmd: Optional[List[str]]) -> Tuple[Optional[str], int]:
+        """Extract a password argument from a command list.
+
+        :param cmd: Command list or ``None``.
+        :return: Tuple of password value and index where it was found.
+        """
         if not cmd:
             return None, -1
         pword_option = '--password'

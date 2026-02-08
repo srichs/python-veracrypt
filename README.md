@@ -33,6 +33,15 @@ On nix based systems the password is passed in using `--stdin`, so the password 
 
 On Windows based systems the password cannot be passed to the CLI using stdin, so care should be taken to ensure that the password will not appear in history or logs. The result that is returned from the basic functional commands of the VeraCrypt class are `subprocess.CompletedProcess` objects, and the password is sanitized on windows in the `args` parameter of the object.
 
+## Documentation
+
+Sphinx documentation lives in the `docs/` directory. To build HTML docs locally:
+
+```bash
+pip install -r requirements.txt
+sphinx-build -b html docs docs/_build/html
+```
+
 ## References
 
 1. [VeraCrypt](https://veracrypt.eu)
