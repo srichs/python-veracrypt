@@ -8,10 +8,10 @@ so that it can be observed. You should watch the desktop for the creation of the
 mounted and dismounted as the action is performed.
 """
 
-from time import sleep
 import logging
 import os
 import secrets
+from time import sleep
 
 from veracrypt import FileSystem, VeraCrypt
 
