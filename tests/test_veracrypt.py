@@ -206,12 +206,14 @@ class TestVeraCrypt(unittest.TestCase):
 
     def test_get_password_windows(self):
         self.veracrypt.os_name = "Windows"
-        password, index = self.veracrypt._get_password([
-            "/volume",
-            "C:/vol",
-            "/password",
-            "Secret",
-        ])
+        password, index = self.veracrypt._get_password(
+            [
+                "/volume",
+                "C:/vol",
+                "/password",
+                "Secret",
+            ]
+        )
 
         self.assertEqual(password, "Secret")
         self.assertEqual(index, 3)
