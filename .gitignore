@@ -1,3 +1,4 @@
 veracrypt/__pycache__/
 tests/__pycache__/
+docs/sphinx/_build
 .venv/
