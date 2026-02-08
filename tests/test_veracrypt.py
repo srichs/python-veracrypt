@@ -234,3 +234,83 @@ class TestVeraCrypt(unittest.TestCase):
 
         self.assertNotIn("--stdin", cmd)
         self.assertIn("--text", cmd)
+
+    def test_mount_win_includes_letter_and_options(self):
+        self.veracrypt.os_name = "Windows"
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
+
+        cmd = self.veracrypt._mount_win(
+            "C:/vol", "Secret", mount_point="X", options=["/readonly"]
+        )
+
+        self.assertIn("/letter", cmd)
+        self.assertIn("X", cmd)
+        self.assertIn("/readonly", cmd)
+        self.assertEqual(cmd[-3:], ["/quit", "/silent", "/force"])
+
+    def test_mount_nix_includes_mount_point_and_options(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+
+        cmd = self.veracrypt._mount_nix(
+            "/vol", mount_point="/mnt/vol", options=["--pim", "123"]
+        )
+
+        self.assertIn("/mnt/vol", cmd)
+        self.assertIn("--pim", cmd)
+        self.assertIn("123", cmd)
+        self.assertIn("--stdin", cmd)
+        self.assertIn("--force", cmd)
+
+    def test_custom_nix_keeps_existing_stdin(self):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        options = ["--text", "--password", "secret", "--mount", "/vol", "--stdin"]
+
+        cmd = self.veracrypt._custom_nix(options)
+
+        self.assertNotIn("secret", cmd)
+        self.assertNotIn("--password", cmd)
+        self.assertEqual(cmd.count("--stdin"), 1)
+
+    @patch("subprocess.run")
+    def test_command_linux_password_uses_stdin(self, mock_run):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        options = ["--text", "--password", "secret", "--mount", "/vol"]
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="OK", stderr=""
+        )
+
+        self.veracrypt.command(options)
+
+        mock_run.assert_called_once()
+        args, kwargs = mock_run.call_args
+        self.assertNotIn("secret", args[0])
+        self.assertEqual(kwargs.get("input"), "secret\n")
+
+    def test_default_path_unsupported_os_raises(self):
+        self.veracrypt.os_name = "Solaris"
+
+        with self.assertRaises(VeraCryptError):
+            self.veracrypt._default_path()
+
+    @patch("subprocess.run")
+    @patch("os.path.exists", return_value=False)
+    def test_create_volume_darwin_creates_placeholder(
+        self, mock_exists, mock_run
+    ):
+        self.veracrypt.os_name = "Darwin"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="OK", stderr=""
+        )
+
+        with patch("builtins.open", unittest.mock.mock_open()) as mock_open, patch.object(
+            self.veracrypt, "_create_nix", return_value=["cmd"]
+        ):
+            self.veracrypt.create_volume("/vol", "pass", 1024)
+
+        mock_open.assert_called_once_with("/vol", "w")
