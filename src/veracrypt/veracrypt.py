@@ -88,6 +88,10 @@ class VeraCrypt(object):
         log_datefmt: Optional[str] = "%Y-%m-%d %H:%M:%S",
         veracrypt_path: Optional[str] = None,
     ):
+        if log_fmt is None:
+            log_fmt = "%(levelname)s:%(module)s:%(funcName)s:%(message)s"
+        if log_datefmt is None:
+            log_datefmt = "%Y-%m-%d %H:%M:%S"
         logging.basicConfig(level=log_level, format=log_fmt, datefmt=log_datefmt)
         self.logger = logging.getLogger("veracrypt.py")
         self.os_name = platform.system()
@@ -434,7 +438,7 @@ class VeraCrypt(object):
     def command(
         self,
         options: Optional[List[str]] = None,
-        windows_program: Optional[str] = "VeraCrypt.exe",
+        windows_program: str = "VeraCrypt.exe",
     ) -> subprocess.CompletedProcess:
         """Call the VeraCrypt CLI with custom options.
 
@@ -482,7 +486,7 @@ class VeraCrypt(object):
     def _custom_win(
         self,
         options: Optional[List[str]] = None,
-        windows_program: Optional[str] = "VeraCrypt.exe",
+        windows_program: str = "VeraCrypt.exe",
     ) -> List[str]:
         """Build a Windows CLI command using an arbitrary VeraCrypt executable."""
         self.logger.debug("Calling custom command on Windows")
@@ -496,18 +500,19 @@ class VeraCrypt(object):
     def _custom_nix(self, options: Optional[List[str]] = None) -> List[str]:
         """Build a Linux/macOS CLI command using provided options."""
         self.logger.debug("Calling custom command on Linux/MacOS")
-        password, p_index = self._get_password(options)
+        options_list = list(options) if options else []
+        password, p_index = self._get_password(options_list)
         cmd = ["sudo", self.veracrypt_path]
 
-        if password and options:
+        if password and options_list:
             self.logger.debug("Removing password from command line options")
-            del options[p_index - 1 : p_index + 1]
+            del options_list[p_index - 1 : p_index + 1]
 
-        if options:
-            cmd += options
+        if options_list:
+            cmd += options_list
 
         if password:
-            if "--stdin" not in options:
+            if "--stdin" not in options_list:
                 cmd += ["--stdin"]
         self.logger.debug("Custom command generated")
         return cmd
