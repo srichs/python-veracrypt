@@ -204,6 +204,23 @@ class TestVeraCrypt(unittest.TestCase):
         with self.assertRaises(VeraCryptError):
             self.veracrypt._default_path()
 
+    @patch("os.path.exists", side_effect=[True, False])
+    def test_default_path_windows_missing_format_binary_raises(self, mock_exists):
+        self.veracrypt.os_name = "Windows"
+
+        with self.assertRaises(VeraCryptError) as ctx:
+            self.veracrypt._default_path()
+
+        self.assertIn("VeraCrypt Format.exe", str(ctx.exception))
+
+    def test_default_path_darwin_uses_check_path(self):
+        self.veracrypt.os_name = "Darwin"
+        with patch.object(self.veracrypt, "_check_path", return_value=True) as mock:
+            path = self.veracrypt._default_path()
+
+        self.assertIn("VeraCrypt.app", path)
+        mock.assert_called_once_with(path)
+
     def test_get_password_windows(self):
         self.veracrypt.os_name = "Windows"
         password, index = self.veracrypt._get_password(
@@ -221,6 +238,13 @@ class TestVeraCrypt(unittest.TestCase):
     def test_get_password_missing_returns_none(self):
         self.veracrypt.os_name = "Linux"
         password, index = self.veracrypt._get_password(["--text", "--mount", "/vol"])
+
+        self.assertIsNone(password)
+        self.assertEqual(index, -1)
+
+    def test_get_password_none_command_returns_none(self):
+        self.veracrypt.os_name = "Linux"
+        password, index = self.veracrypt._get_password(None)
 
         self.assertIsNone(password)
         self.assertEqual(index, -1)
@@ -379,6 +403,46 @@ class TestVeraCrypt(unittest.TestCase):
 
         self.assertIn("Oops", str(ctx.exception))
 
+    @patch("subprocess.run")
+    def test_mount_volume_windows_error_raises(self, mock_run):
+        self.veracrypt.os_name = "Windows"
+        mock_run.side_effect = subprocess.CalledProcessError(1, "cmd", stderr="Nope")
+
+        with (
+            patch.object(self.veracrypt, "_check_path", return_value=True),
+            self.assertRaises(VeraCryptError) as ctx,
+        ):
+            self.veracrypt.mount_volume("C:/vol", "Secret")
+
+        self.assertIn("Nope", str(ctx.exception))
+
+    @patch("subprocess.run")
+    def test_create_volume_linux_error_raises(self, mock_run):
+        self.veracrypt.os_name = "Linux"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        mock_run.side_effect = subprocess.CalledProcessError(1, "cmd", stderr="Bad")
+
+        with self.assertRaises(VeraCryptError) as ctx:
+            self.veracrypt.create_volume("/vol", "secret", 1024)
+
+        self.assertIn("Bad", str(ctx.exception))
+
+    @patch("subprocess.run")
+    def test_command_windows_without_password_does_not_mask(self, mock_run):
+        self.veracrypt.os_name = "Windows"
+        self.veracrypt.veracrypt_path = os.path.join(
+            "C:\\", "Program Files", "VeraCrypt"
+        )
+        options = ["/volume", "C:/vol", "/quit"]
+        cmd = [os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe")] + options
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="OK", stderr=""
+        )
+
+        result = self.veracrypt.command(options)
+
+        self.assertEqual(result.args, cmd)
+
     def test_default_path_unsupported_os_raises(self):
         self.veracrypt.os_name = "Solaris"
 
@@ -401,3 +465,22 @@ class TestVeraCrypt(unittest.TestCase):
             self.veracrypt.create_volume("/vol", "pass", 1024)
 
         mock_open.assert_called_once_with("/vol", "w")
+
+    @patch("subprocess.run")
+    @patch("os.path.exists", return_value=True)
+    def test_create_volume_darwin_skips_placeholder_when_exists(
+        self, mock_exists, mock_run
+    ):
+        self.veracrypt.os_name = "Darwin"
+        self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="OK", stderr=""
+        )
+
+        with (
+            patch("builtins.open", unittest.mock.mock_open()) as mock_open,
+            patch.object(self.veracrypt, "_create_nix", return_value=["cmd"]),
+        ):
+            self.veracrypt.create_volume("/vol", "pass", 1024)
+
+        mock_open.assert_not_called()
