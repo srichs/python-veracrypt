@@ -324,7 +324,9 @@ class TestVeraCrypt(unittest.TestCase):
 
         cmd = self.veracrypt._custom_win(options, windows_program="VeraCrypt.exe")
 
-        self.assertEqual(cmd[0], os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe"))
+        self.assertEqual(
+            cmd[0], os.path.join(self.veracrypt.veracrypt_path, "VeraCrypt.exe")
+        )
         self.assertEqual(cmd[1:], options)
 
     def test_custom_nix_without_options_returns_base_command(self):
