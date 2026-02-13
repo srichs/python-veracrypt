@@ -253,7 +253,9 @@ class TestVeraCrypt(unittest.TestCase):
         self.veracrypt.os_name = "Linux"
 
         with self.assertRaises(ValueError) as ctx:
-            self.veracrypt._get_password(["--text", "--password", "", "--mount", "/vol"])
+            self.veracrypt._get_password(
+                ["--text", "--password", "", "--mount", "/vol"]
+            )
 
         self.assertIn("without a value", str(ctx.exception))
 
