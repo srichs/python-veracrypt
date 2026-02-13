@@ -249,6 +249,14 @@ class TestVeraCrypt(unittest.TestCase):
         self.assertIsNone(password)
         self.assertEqual(index, -1)
 
+    def test_get_password_empty_value_raises(self):
+        self.veracrypt.os_name = "Linux"
+
+        with self.assertRaises(ValueError) as ctx:
+            self.veracrypt._get_password(["--text", "--password", "", "--mount", "/vol"])
+
+        self.assertIn("without a value", str(ctx.exception))
+
     def test_custom_nix_without_password_skips_stdin(self):
         self.veracrypt.os_name = "Linux"
         self.veracrypt.veracrypt_path = "/usr/bin/veracrypt"

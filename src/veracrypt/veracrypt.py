@@ -597,13 +597,15 @@ class VeraCrypt(object):
             pword_option = "/password"
 
         try:
-            index = cmd.index(pword_option) + 1
+            option_index = cmd.index(pword_option)
+        except ValueError:
+            return None, -1
+
+        try:
+            index = option_index + 1
             pword = cmd[index]
             if pword == "":
                 raise ValueError("Password option provided without a value.")
-        except ValueError:
-            pword = None
-            index = -1
         except IndexError as exc:
             raise ValueError("Password option provided without a value.") from exc
         return pword, index
