@@ -1,7 +1,7 @@
 # python-veracrypt
 
 [![CI](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml/badge.svg)](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml)
-[![docs](https://img.shields.io/github/actions/workflow/status/srichs/python-veracrypt/ci.yml?branch=main&label=docs)](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/srichs/python-veracrypt/ci.yml?branch=main&label=docs)](https://github.com/srichs/python-veracrypt/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/python-veracrypt.svg)](https://pypi.org/project/python-veracrypt/)
 
 ## Overview
