@@ -33,4 +33,5 @@ jobs:
         run: mypy src
 
       - name: Run tests
-        run: pytest
+        run: |
+          pytest --cov=veracrypt --cov-report=term-missing --cov-fail-under=80
