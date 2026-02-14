@@ -133,9 +133,7 @@ class VeraCrypt(object):
     def _validate_enum(value: Enum, enum_cls: Type[Enum], name: str) -> None:
         """Validate that an argument is an instance of a specific enum class."""
         if not isinstance(value, enum_cls):
-            raise ValueError(
-                f"{name} must be an instance of {enum_cls.__name__}."
-            )
+            raise ValueError(f"{name} must be an instance of {enum_cls.__name__}.")
 
     @staticmethod
     def _validate_volume_parent_dir(volume_path: str) -> None:
