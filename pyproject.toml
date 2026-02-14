@@ -1,6 +1,6 @@
 [project]
 name = "python-veracrypt"
-version = "0.1.1"
+version = "0.1.2"
 description = "A cross-platform Python wrapper for the VeraCrypt CLI."
 readme = "README.md"
 requires-python = ">=3.11"
