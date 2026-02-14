@@ -533,7 +533,6 @@ class TestVeraCrypt(unittest.TestCase):
         with self.assertRaises(VeraCryptError):
             self.veracrypt._default_path()
 
-
     def test_create_volume_rejects_invalid_encryption_type(self):
         self.veracrypt.os_name = "Linux"
 
