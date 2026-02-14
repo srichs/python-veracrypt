@@ -533,6 +533,31 @@ class TestVeraCrypt(unittest.TestCase):
         with self.assertRaises(VeraCryptError):
             self.veracrypt._default_path()
 
+
+    def test_create_volume_rejects_invalid_encryption_type(self):
+        self.veracrypt.os_name = "Linux"
+
+        with self.assertRaises(ValueError) as ctx:
+            self.veracrypt.create_volume("/vol", "secret", 1024, encryption="AES")
+
+        self.assertIn("encryption must be an instance of Encryption", str(ctx.exception))
+
+    def test_create_volume_rejects_invalid_hash_type(self):
+        self.veracrypt.os_name = "Linux"
+
+        with self.assertRaises(ValueError) as ctx:
+            self.veracrypt.create_volume("/vol", "secret", 1024, hash_alg="sha-512")
+
+        self.assertIn("hash_alg must be an instance of Hash", str(ctx.exception))
+
+    def test_create_volume_rejects_invalid_filesystem_type(self):
+        self.veracrypt.os_name = "Linux"
+
+        with self.assertRaises(ValueError) as ctx:
+            self.veracrypt.create_volume("/vol", "secret", 1024, filesystem="FAT")
+
+        self.assertIn("filesystem must be an instance of FileSystem", str(ctx.exception))
+
     @patch("subprocess.run")
     @patch("os.path.exists", return_value=False)
     def test_create_volume_darwin_creates_placeholder(self, mock_exists, mock_run):

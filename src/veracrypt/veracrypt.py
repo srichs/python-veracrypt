@@ -5,7 +5,7 @@ import os
 import platform
 import subprocess
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 
 class Encryption(Enum):
@@ -128,6 +128,14 @@ class VeraCrypt(object):
         """Validate volume size is a positive integer."""
         if not isinstance(size, int) or size <= 0:
             raise ValueError("Volume size must be a positive integer.")
+
+    @staticmethod
+    def _validate_enum(value: Enum, enum_cls: Type[Enum], name: str) -> None:
+        """Validate that an argument is an instance of a specific enum class."""
+        if not isinstance(value, enum_cls):
+            raise ValueError(
+                f"{name} must be an instance of {enum_cls.__name__}."
+            )
 
     @staticmethod
     def _validate_volume_parent_dir(volume_path: str) -> None:
@@ -370,6 +378,9 @@ class VeraCrypt(object):
         self._validate_options(options, "create_volume")
         self._validate_keyfiles(keyfiles, "create_volume")
         self._validate_size(size)
+        self._validate_enum(encryption, Encryption, "encryption")
+        self._validate_enum(hash_alg, Hash, "hash_alg")
+        self._validate_enum(filesystem, FileSystem, "filesystem")
         if self.os_name == "Linux":
             self._validate_volume_parent_dir(volume_path)
 
